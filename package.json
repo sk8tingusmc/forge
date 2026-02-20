@@ -1,0 +1,81 @@
+{
+  "name": "forge",
+  "version": "0.1.0",
+  "description": "Your AI development foundry — workspace-centric multi-agent orchestration",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "node scripts/preflight.js && concurrently -k \"vite\" \"wait-on http://localhost:5174 && electron .\"",
+    "build": "tsc -p tsconfig.node.json && vite build && electron-builder",
+    "dist": "npm run build",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux",
+    "doctor": "node scripts/preflight.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "^1.1.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-search": "^0.15.0",
+    "@xterm/addon-web-links": "^0.11.0",
+    "@xterm/xterm": "^5.5.0",
+    "better-sqlite3": "^11.9.1",
+    "electron-store": "^10.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.7.1",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11",
+    "vitest": "^3.0.5",
+    "wait-on": "^8.0.2"
+  },
+  "optionalDependencies": {
+    "@esbuild/win32-x64": "^0.21.5",
+    "@esbuild/darwin-arm64": "^0.21.5",
+    "@esbuild/darwin-x64": "^0.21.5",
+    "@esbuild/linux-x64": "^0.21.5",
+    "@lydell/node-pty-win32-x64": "^1.1.0",
+    "@lydell/node-pty-darwin-arm64": "^1.1.0",
+    "@lydell/node-pty-darwin-x64": "^1.1.0",
+    "@lydell/node-pty-linux-x64": "^1.1.0"
+  },
+  "build": {
+    "appId": "com.forge.dev",
+    "productName": "Forge",
+    "copyright": "Copyright © 2026",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [{ "target": "portable", "arch": ["x64"] }]
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ]
+    },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }]
+    },
+    "nativeRebuilder": "sequential",
+    "npmRebuild": true
+  }
+}
