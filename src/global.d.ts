@@ -1,8 +1,8 @@
 // Global type definitions — SINGLE SOURCE OF TRUTH for window APIs
 
 import type {
-  ShellAPI, WorkspaceAPI, MemoryAPI, AgentAPI, ContinuationAPI, AppAPI
-} from '../electron/preload'
+  ShellAPI, WorkspaceAPI, MemoryAPI, AgentAPI, ContinuationAPI, AppAPI, EnsembleAPI
+} from '../electron/preload.ts'
 
 declare global {
   interface Window {
@@ -12,6 +12,7 @@ declare global {
     agent: AgentAPI
     continuation: ContinuationAPI
     appControls: AppAPI
+    ensemble: EnsembleAPI
   }
 }
 

@@ -1,22 +1,7 @@
 import React, { useMemo } from 'react'
 import { useWorkspace } from '../contexts/WorkspaceContext'
 import type { AgentSession } from '../contexts/WorkspaceContext'
-
-const CLI_COLORS: Record<string, string> = {
-  claude: '#60a5fa',
-  gemini: '#a855f7',
-  codex: '#22c55e',
-  copilot: '#f97316',
-  qwen: '#ec4899',
-  llm: '#10b981',
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  spawning: '#f97316',
-  running: '#22c55e',
-  idle: '#8b949e',
-  dead: '#484f58',
-}
+import { CLI_COLORS, STATUS_COLORS } from '../constants'
 
 interface NodeLayout {
   id: string
@@ -145,8 +130,9 @@ function AgentNode({ layout, onKill, onToggleContinuation }: AgentNodeProps) {
         fill="transparent"
         style={{ cursor: 'pointer' }}
         onDoubleClick={() => onKill(agent.ptyId)}
-        title="Double-click to kill agent"
-      />
+      >
+        <title>Double-click to kill agent</title>
+      </circle>
     </g>
   )
 }

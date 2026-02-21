@@ -18,7 +18,7 @@ export default function TitleBar() {
             key={ws.id}
             onClick={() => switchWorkspace(ws.id)}
             className={`
-              flex items-center gap-1.5 px-3 h-7 rounded text-xs shrink-0
+              flex items-center gap-1.5 px-3 h-8 rounded text-sm shrink-0
               transition-colors
               ${activeWorkspace?.id === ws.id
                 ? 'bg-surface-hover text-text-primary border border-border-subtle'
@@ -34,7 +34,7 @@ export default function TitleBar() {
         {/* Open workspace button */}
         <button
           onClick={pickAndOpen}
-          className="titlebar-no-drag flex items-center gap-1 px-3 h-7 rounded text-xs text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
+          className="titlebar-no-drag flex items-center gap-1 px-3 h-8 rounded text-sm text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
           title="Open workspace (folder)"
         >
           <span>+</span>
@@ -46,15 +46,15 @@ export default function TitleBar() {
       <div className="titlebar-no-drag flex items-center gap-0 shrink-0 pr-2">
         <button
           onClick={() => window.appControls.minimize()}
-          className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-hover rounded transition-colors text-xs"
+          className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-hover rounded transition-colors text-sm"
         >─</button>
         <button
           onClick={() => window.appControls.maximize()}
-          className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-hover rounded transition-colors text-xs"
+          className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface-hover rounded transition-colors text-sm"
         >□</button>
         <button
           onClick={() => window.appControls.close()}
-          className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-[#f85149] hover:bg-surface-hover rounded transition-colors text-xs"
+          className="w-8 h-8 flex items-center justify-center text-text-muted hover:text-[#f85149] hover:bg-surface-hover rounded transition-colors text-sm"
         >✕</button>
       </div>
     </div>

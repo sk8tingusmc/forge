@@ -72,14 +72,14 @@ Every existing AI dev tool picks one of two broken paradigms:
 - **"God group"** → admin workspace with full system access
 
 ### From ai-cli-switcher / claw-fusion-desktop
-- Electron 35 + React 18 + TypeScript + Vite 7 stack (battle-tested)
+- Electron 35 + React 18 + TypeScript + Vite 6 stack (battle-tested)
 - xterm.js 5 + node-pty for real PTY sessions
 - better-sqlite3 WAL mode for persistence
 - GitHub dark theme (hex color tokens, not Tailwind gray-* scale)
 - Frameless window with custom titlebar
 - preflight.js native module auto-rebuild
 - OS idle notifications via Electron Notification API
-- WSL Ubuntu for running CLIs
+- Native CLI execution (PowerShell on Windows, default shell on macOS/Linux)
 
 ### What is GENUINELY NEW in Forge
 
@@ -118,13 +118,13 @@ Every existing AI dev tool picks one of two broken paradigms:
 │                                                         │
 │  ┌─────────────────────────────────────────────────────┐  │
 │  │  Continuation Engine (Ralph Loop equivalent)        │  │
-│  │  Watches PTY output → auto-sends "continue\n"       │  │
+│  │  Watches PTY output → auto-sends next action         │  │
 │  │  until DONE signal or max iterations                 │  │
 │  └─────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
               ↕ contextBridge IPC (preload.ts)
 ┌─────────────────────────────────────────────────────────┐
-│  React Renderer (Vite 7)                                │
+│  React Renderer (Vite 6)                                │
 │                                                         │
 │  WorkspaceContext ─── AgentContext                      │
 │                                                         │
@@ -139,9 +139,9 @@ Every existing AI dev tool picks one of two broken paradigms:
 │  │  └─────────┘ │  SpawnBar [Auto|Claude|Gemini|...] │  │
 │  └──────────────┴────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
-              ↕ wsl.exe -d Ubuntu
+              ↕ Native CLI (PowerShell on Windows)
 ┌─────────────────────────────────────────────────────────┐
-│  WSL Ubuntu                                             │
+│  CLI Tools (installed via PATH)                         │
 │  claude / gemini / codex / copilot / qwen / llm         │
 │  (running in workspace directory)                       │
 └─────────────────────────────────────────────────────────┘
@@ -162,7 +162,9 @@ Every existing AI dev tool picks one of two broken paradigms:
 
 **Continuation Engine** — Background watcher in main.ts:
 - Watches PTY output for quiet periods (12s default)
-- If agent is at an idle prompt AND no DONE signal seen: send `continue\n`
+- If agent is at an idle prompt AND no DONE signal seen:
+  - Interactive mode: send `continue\n`
+  - One-shot loop mode: send full command (for example `claude -p "task"`)
 - Increments iteration counter, notifies renderer
 - Stops when: DONE signal detected, max iterations reached, or user cancels
 
@@ -275,6 +277,7 @@ continuation_state
 |---------|-----------|-------------|
 | `workspace:open(path)` | invoke | Open/register workspace, load skills + AGENTS.md |
 | `workspace:list()` | invoke | Recent workspaces (last 20) |
+| `workspace:get(id)` | invoke | Get a specific workspace by id |
 | `workspace:pickDirectory()` | invoke | Native folder picker dialog |
 | `workspace:getSkills(path)` | invoke | Load SKILL.md files |
 | `workspace:getAgentsMd(path)` | invoke | Load AGENTS.md / CLAUDE.md |
@@ -284,7 +287,10 @@ continuation_state
 | `memory:list(wid, cat?)` | invoke | List all memories |
 | `memory:delete(wid, key)` | invoke | Delete memory |
 | `agent:route(description, preferred?)` | invoke | Get CLI routing suggestion |
-| `shell:spawn(cli, path, wid, goal?)` | invoke | Start PTY session |
+| `shell:spawn(cli, path, wid, goal?, oneShotLoop?)` | invoke | Start PTY session (interactive CLI or persistent shell for one-shot loops) |
+| `shell:list()` | invoke | List active in-memory PTY sessions |
+| `shell:openExternal(url)` | invoke | Open trusted external HTTP(S) URL |
+| `shell:openPath(path)` | invoke | Open path in OS file explorer (creates path if missing) |
 | `shell:write(ptyId, data)` | send | Write to PTY |
 | `shell:resize(ptyId, cols, rows)` | send | Resize PTY |
 | `shell:kill(ptyId)` | invoke | Kill PTY |
@@ -296,6 +302,7 @@ continuation_state
 | `continuation:iteration` | event → renderer | Agent continued |
 | `continuation:done` | event → renderer | Agent signalled DONE |
 | `continuation:maxReached` | event → renderer | Hit iteration limit |
+| `ensemble:synthesis(workspaceId, workspacePath, goal, n)` | invoke | Run Best-of-N hidden Claude runs for a workspace and return a resumable synthesis session id |
 | `window:minimize/maximize/close` | send | Window controls |
 
 ---
@@ -353,7 +360,8 @@ Main process watches PTY output:
       If DONE → emit continuation:done, stop
       If at prompt AND not done:
         increment iteration
-        write "continue\n" to PTY
+        write next action to PTY
+        (interactive mode uses "continue\n"; one-shot mode uses full command)
         emit continuation:iteration to renderer
         reschedule check
       If iteration >= max:
@@ -427,14 +435,14 @@ Main process watches PTY output:
 | Decision | Choice | Why NOT alternatives |
 |----------|--------|----------------------|
 | Runtime | Electron 35 | Native OS integration (PTY, notifications, file dialogs) |
-| Frontend | React 18 + Vite 7 | Proven, fast HMR, rich ecosystem |
+| Frontend | React 18 + Vite 6 | Proven, fast HMR, rich ecosystem |
 | Styling | Tailwind CSS 3.4 | Utility-first, consistent with existing tooling |
 | Terminal | xterm.js 5 | Best-in-class web terminal, xterm-compatible |
 | PTY | @lydell/node-pty | Best maintained fork, WSL-compatible |
 | Database | better-sqlite3 WAL | Synchronous API, FTS5 support, battle-tested in claw-fusion |
 | Language | TypeScript strict | Type safety for IPC APIs, preload bridge |
 | Agent Graph | Pure SVG | No D3 dependency, simpler, full control |
-| CLIs | WSL Ubuntu | All CLIs available via wsl.exe, consistent env |
+| CLIs | Native (PowerShell on Windows) | CLIs run natively via PATH, no WSL dependency |
 | Memory | SQLite FTS5 BM25 | No external deps (vs Elasticsearch), fast enough, native |
 | Skills | SKILL.md (file-based) | Zero-config, compatible with Claude Code + OpenCode |
 | Config | electron-store | Simple, works in Electron, no YAML sprawl |

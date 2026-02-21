@@ -7,10 +7,12 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "outDir": "dist-electron",
-    "rootDir": ".",
+    "rootDir": "electron",
     "noEmit": false,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "composite": true,
+    "declaration": true
   },
   "include": ["electron"],
   "exclude": ["node_modules", "dist", "dist-electron", "release"]

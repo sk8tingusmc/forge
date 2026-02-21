@@ -1,24 +1,16 @@
-import React, { useEffect, useRef, useCallback } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Terminal as XTerm } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { SearchAddon } from '@xterm/addon-search'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
+import { CLI_COLORS } from '../constants'
 
 interface TerminalProps {
   ptyId: string
   cliType: string
   active?: boolean
   onReady?: () => void
-}
-
-const CLI_COLORS: Record<string, string> = {
-  claude: '#60a5fa',
-  gemini: '#a855f7',
-  codex: '#22c55e',
-  copilot: '#f97316',
-  qwen: '#ec4899',
-  llm: '#10b981',
 }
 
 export default function Terminal({ ptyId, cliType, active = true, onReady }: TerminalProps) {
@@ -86,7 +78,7 @@ export default function Terminal({ ptyId, cliType, active = true, onReady }: Ter
     })
 
     // Attach IPC data listener
-    const offData = window.shell.onData((id, data) => {
+    const offData = window.shell.onData((id: string, data: string) => {
       if (id === ptyId) term.write(data)
     })
     isAttachedRef.current = true

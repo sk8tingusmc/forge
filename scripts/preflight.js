@@ -67,9 +67,14 @@ function checkNodeModules() {
   process.stdout.write('[preflight] Checking node_modules... ');
   if (!fs.existsSync(path.join(root, 'node_modules'))) {
     console.log('MISSING');
-    console.log('[preflight] Running npm install...');
+    // Use --ignore-scripts so native modules (better-sqlite3, node-pty) don't try
+    // to build for the wrong target (Node.js ABI). The preflight handles native
+    // rebuilds for Electron explicitly in subsequent steps.
+    console.log('[preflight] Running npm install --ignore-scripts...');
     try {
-      execSync('npm install --prefer-offline --no-audit --no-fund', { cwd: root, stdio: 'inherit', timeout: 300000 });
+      execSync('npm install --prefer-offline --no-audit --no-fund --ignore-scripts', {
+        cwd: root, stdio: 'inherit', timeout: 300000
+      });
       console.log('[preflight] npm install completed');
     } catch (err) {
       console.error('[preflight] ERROR: npm install failed:', err.message);

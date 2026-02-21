@@ -4,7 +4,7 @@
   "description": "Your AI development foundry — workspace-centric multi-agent orchestration",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "node scripts/preflight.js && concurrently -k \"vite\" \"wait-on http://localhost:5174 && electron .\"",
+    "dev": "node scripts/preflight.js && tsc -p tsconfig.node.json && concurrently -k \"tsc -p tsconfig.node.json -w\" \"vite\" \"wait-on http://localhost:5175 && electron .\"",
     "build": "tsc -p tsconfig.node.json && vite build && electron-builder",
     "dist": "npm run build",
     "dist:win": "electron-builder --win",

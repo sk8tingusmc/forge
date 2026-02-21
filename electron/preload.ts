@@ -52,7 +52,15 @@ export interface ContinuationInfo {
 // ── Shell API ─────────────────────────────────────────────────────────────────
 
 export interface ShellAPI {
-  spawn(cliType: string, workspacePath: string, workspaceId: string, goal?: string): Promise<{ ptyId: string; sessionId: string } | { error: string }>
+  spawn(
+    cliType: string,
+    workspacePath: string,
+    workspaceId: string,
+    goal?: string,
+    oneShotLoop?: boolean,
+    shellSession?: boolean,
+    resumeSessionId?: string
+  ): Promise<{ ptyId: string; sessionId: string } | { error: string }>
   write(ptyId: string, data: string): void
   resize(ptyId: string, cols: number, rows: number): void
   kill(ptyId: string): Promise<{ ok: boolean }>
@@ -60,6 +68,7 @@ export interface ShellAPI {
   onData(callback: (ptyId: string, data: string) => void): () => void
   onExit(callback: (ptyId: string, exitCode: number) => void): () => void
   openExternal(url: string): Promise<void>
+  openPath(dirPath: string): Promise<string>
 }
 
 // ── Workspace API ─────────────────────────────────────────────────────────────
@@ -108,11 +117,17 @@ export interface AppAPI {
   close(): void
 }
 
+export interface EnsembleAPI {
+  run(workspaceId: string, workspacePath: string, goal: string, n: number): Promise<{ ok: boolean; count: number; sessionId: string; jobId: string } | { error: string }>
+  onProgress(callback: (info: { jobId: string; workspaceId: string; goal: string; completed: number; total: number }) => void): () => void
+  onDone(callback: (info: { jobId: string; workspaceId: string; goal: string; sessionId: string; total: number }) => void): () => void
+}
+
 // ── Implementations ───────────────────────────────────────────────────────────
 
 const shellAPI: ShellAPI = {
-  spawn: (cliType, workspacePath, workspaceId, goal) =>
-    ipcRenderer.invoke('shell:spawn', cliType, workspacePath, workspaceId, goal),
+  spawn: (cliType, workspacePath, workspaceId, goal, oneShotLoop, shellSession, resumeSessionId) =>
+    ipcRenderer.invoke('shell:spawn', cliType, workspacePath, workspaceId, goal, oneShotLoop, shellSession, resumeSessionId),
   write: (ptyId, data) => ipcRenderer.send('shell:write', ptyId, data),
   resize: (ptyId, cols, rows) => ipcRenderer.send('shell:resize', ptyId, cols, rows),
   kill: (ptyId) => ipcRenderer.invoke('shell:kill', ptyId),
@@ -128,6 +143,7 @@ const shellAPI: ShellAPI = {
     return () => ipcRenderer.off('shell:exit', listener)
   },
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
+  openPath: (dirPath) => ipcRenderer.invoke('shell:openPath', dirPath),
 }
 
 const workspaceAPI: WorkspaceAPI = {
@@ -178,6 +194,20 @@ const appAPI: AppAPI = {
   close: () => ipcRenderer.send('window:close'),
 }
 
+const ensembleAPI: EnsembleAPI = {
+  run: (workspaceId, workspacePath, goal, n) => ipcRenderer.invoke('ensemble:synthesis', workspaceId, workspacePath, goal, n),
+  onProgress: (cb) => {
+    const listener = (_: unknown, info: { jobId: string; workspaceId: string; goal: string; completed: number; total: number }) => cb(info)
+    ipcRenderer.on('ensemble:progress', listener)
+    return () => ipcRenderer.off('ensemble:progress', listener)
+  },
+  onDone: (cb) => {
+    const listener = (_: unknown, info: { jobId: string; workspaceId: string; goal: string; sessionId: string; total: number }) => cb(info)
+    ipcRenderer.on('ensemble:done', listener)
+    return () => ipcRenderer.off('ensemble:done', listener)
+  },
+}
+
 // ── Expose APIs ───────────────────────────────────────────────────────────────
 
 contextBridge.exposeInMainWorld('shell', shellAPI)
@@ -186,3 +216,4 @@ contextBridge.exposeInMainWorld('memory', memoryAPI)
 contextBridge.exposeInMainWorld('agent', agentAPI)
 contextBridge.exposeInMainWorld('continuation', continuationAPI)
 contextBridge.exposeInMainWorld('appControls', appAPI)
+contextBridge.exposeInMainWorld('ensemble', ensembleAPI)
