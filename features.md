@@ -99,6 +99,21 @@ After all CLIs are working reliably, synthesis should support selecting multiple
   - Each model synthesizes across the same full set of 4 outputs.
   - Open 4 resumed tabs (one per model), assuming each CLI supports `--resume` or an equivalent resume mechanism.
 
+## Messaging connectivity priority (updated)
+
+Prefer WhatsApp connectivity first as the default external chat path because onboarding/linking is currently easier and already validated.
+
+- Primary plan:
+  - Implement WhatsApp channel support before Telegram.
+  - Treat WhatsApp as the default control + delivery channel until Telegram is production-ready.
+- Auth/linking flow to support:
+  - QR flow: `npm run auth`
+  - Pairing-code fallback: `npm run auth -- --pairing-code --phone <E164-number>`
+  - Persist successful auth state and reuse it across restarts.
+- Product behavior expectation:
+  - If WhatsApp is connected, Forge can receive prompts and return final answers there.
+  - Telegram remains a later-phase channel (kept in this doc as the next expansion after WhatsApp is stable).
+
 ## Future: Telegram connectivity (best implementation plan)
 
 Reference codebases reviewed:
