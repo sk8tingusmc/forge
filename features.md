@@ -98,3 +98,113 @@ After all CLIs are working reliably, synthesis should support selecting multiple
   - Combine all 4 base outputs.
   - Each model synthesizes across the same full set of 4 outputs.
   - Open 4 resumed tabs (one per model), assuming each CLI supports `--resume` or an equivalent resume mechanism.
+
+## Future: Telegram connectivity (best implementation plan)
+
+Reference codebases reviewed:
+
+- `C:\Users\Blake\dev\openclaw` (primary implementation reference; production-grade Telegram channel)
+- `C:\Users\Blake\dev\pynchy` (plugin-first channel architecture patterns)
+- `C:\Users\Blake\dev\nanoclaw` (skill-based Telegram bootstrap patterns, archived examples)
+- `C:\Users\Blake\dev\oh-my-opencode` (no equivalent Telegram channel runtime to reuse directly)
+
+### Recommended baseline to copy into Forge
+
+Use the `openclaw` approach as the default blueprint, then keep it modular like `pynchy` so Telegram can be enabled/disabled without touching core orchestration logic.
+
+### Implementation requirements (OpenClaw-first)
+
+1. Channel architecture
+- Add a dedicated Telegram channel module with clear boundaries:
+  - inbound update intake (polling/webhook)
+  - outbound send API
+  - access control/policy checks
+  - command handling/menu sync
+  - topic/thread routing helpers
+- Keep Telegram isolated from core synthesis/session engine so failures do not block local app usage.
+
+2. Auth and config
+- Support token loading order:
+  - `tokenFile` (preferred for secrets)
+  - explicit config value
+  - env fallback
+- Add multi-account-ready config shape from day one (even if only one account used initially).
+- Redact bot tokens from logs/errors.
+
+3. Ingress mode (polling + webhook)
+- Support both polling and webhook modes.
+- In webhook mode, require non-empty `webhookSecret` and reject startup if missing.
+- Verify webhook secret on inbound requests.
+- Use short webhook callback timeout behavior (ack quickly; process asynchronously) to avoid retry storms.
+
+4. Access control and safety
+- Require numeric Telegram sender IDs in allowlists (`allowFrom`); do not authorize via `@username`.
+- Separate DM and group policy controls:
+  - `open`
+  - `allowlist`
+  - `disabled`
+- Add per-group/per-topic overrides for policy, skills, and allowlists.
+
+5. Outbound reliability
+- Centralize Telegram sends through one helper with retry/backoff.
+- Handle `429` and network/transient failures with retry and `retry_after` support.
+- If formatted send fails (HTML/parse errors), retry as plain text.
+- Handle `message_thread_id` failures by retrying without thread id when appropriate.
+
+6. Topics, threads, and routing
+- Support explicit topic targets using canonical syntax:
+  - `<chatId>:topic:<threadId>`
+- Preserve thread context for replies in groups and DM topic threads.
+- Store route/session metadata so Telegram conversations map predictably to Forge sessions.
+
+7. Media handling
+- Add robust media fetch/send pipeline with retries.
+- If inbound media download fails, continue with text and placeholder metadata instead of dropping the whole turn.
+- Handle Telegram API size limits gracefully (do not hard-fail the conversation).
+
+8. Commands and UX
+- Normalize slash command names to Telegram-safe format (hyphen to underscore, length/pattern-safe).
+- Cap menu registration to Telegram limits (100 commands) and warn on overflow.
+- Keep plugin/custom commands callable even if some are hidden from Telegram menu.
+
+9. Response delivery behavior
+- For external messaging surfaces (Telegram), deliver final answers only by default.
+- Keep draft/streaming internals for local UI if needed, but avoid noisy partial output to chat users.
+
+10. Forge-specific integration behavior
+- Add a Telegram account in Forge settings (token/tokenFile, mode, allowlists, default destination).
+- Allow Telegram message -> start or resume Forge session.
+- Allow Forge answer -> send back to Telegram with reply context preserved.
+- Add optional "control-only" mode (Telegram can trigger actions but does not receive every outbound result).
+
+### ENAMETOOLONG hardening for Telegram and future CLIs
+
+- Reuse the same fix pattern applied to Claude synthesis:
+  - never pass large synthesized prompt payloads as command-line args
+  - write prompts via stdin or temp-file handoff
+  - keep CLI args short (`--resume`, ids, flags only)
+- Apply this to any Telegram-triggered CLI dispatch path so large chat context cannot break spawn.
+
+### Rollout phases
+
+Phase 1 (MVP):
+- One Telegram account, polling mode, numeric allowlist, final-text replies, no media.
+
+Phase 2 (stable):
+- Webhook mode + secret validation, retry/backoff, topic routing, media reliability, command menu sync.
+
+Phase 3 (advanced):
+- Multi-account routing, per-topic policies/skills, control-only mode, outbound action tools (polls/stickers/topic create).
+
+### Test plan required before enabling by default
+
+- Unit tests:
+  - allowlist normalization and numeric-id enforcement
+  - webhook secret required in webhook mode
+  - command normalization and menu cap behavior
+  - target parsing for `<chatId>:topic:<threadId>`
+  - retry/fallback behavior (429, parse errors, thread-not-found)
+- Integration tests:
+  - Telegram inbound message starts Forge session
+  - Forge final answer returns to same chat/thread
+  - resume mapping remains correct across restarts
