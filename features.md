@@ -114,6 +114,42 @@ Prefer WhatsApp connectivity first as the default external chat path because onb
   - If WhatsApp is connected, Forge can receive prompts and return final answers there.
   - Telegram remains a later-phase channel (kept in this doc as the next expansion after WhatsApp is stable).
 
+## Future: Docker runtime option (optional but recommended)
+
+Add Docker as an optional runtime mode for portability, isolation, and simpler environment setup across machines.
+
+1. Docker health + onboarding
+- Detect Docker availability on startup (`docker` on PATH + `docker info`).
+- Show clear status in Forge settings:
+  - Docker not installed
+  - Docker installed but engine not running
+  - Docker ready
+- Add one-click diagnostics output to help users fix environment issues quickly.
+
+2. Execution modes
+- Keep native host mode as default.
+- Add per-session runtime selection:
+  - `native`
+  - `docker`
+- In Docker mode, run CLI sessions inside containers with workspace mounts.
+
+3. Containerized messaging bridge (optional)
+- Support running WhatsApp/Telegram bridge workers in containers.
+- Persist auth/session data in Docker volumes so restarts do not lose linking state.
+- Keep bridge logs separate from core Forge app logs.
+
+4. Compose-based local stack
+- Add `docker compose` profile(s) for:
+  - Forge side services
+  - Optional WhatsApp bridge
+  - Optional local model stack (e.g., Ollama)
+- Keep this optional so local-native workflows still work.
+
+5. Security and secrets
+- Mount only required paths.
+- Use env files/secret files for tokens, never long command-line args.
+- Reuse ENAMETOOLONG protections for any container dispatch path by sending large prompts over stdin or temp-file handoff.
+
 ## Future: Telegram connectivity (best implementation plan)
 
 Reference codebases reviewed:
