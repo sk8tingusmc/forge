@@ -272,19 +272,34 @@ async function runHiddenClaudeOnce(
     if (options?.isolatedHomeDir) {
       applyIsolatedHomeToEnv(childEnv, options.isolatedHomeDir)
     }
-    const args: string[] = ['-p', goal]
+    // Always pipe prompt via stdin to avoid OS command-line length limits
+    // (Windows can throw ENAMETOOLONG for large synthesized prompts).
+    const args: string[] = ['-p']
     if (options?.noSessionPersistence) {
-      args.unshift('--no-session-persistence')
+      args.push('--no-session-persistence')
     }
     if (options?.sessionId) {
-      args.unshift(options.sessionId)
-      args.unshift('--session-id')
+      args.push('--session-id', options.sessionId)
     }
-    const child = spawnChild('claude', args, {
-      cwd,
-      env: childEnv,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
+    let child: ReturnType<typeof spawnChild>
+    try {
+      child = spawnChild('claude', args, {
+        cwd,
+        env: childEnv,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      resolve(`(runner error: ${msg})`)
+      return
+    }
+
+    // Send full prompt payload through stdin so argument size stays small.
+    try {
+      child.stdin?.end(goal)
+    } catch {
+      // If stdin is already closed, child error/close handlers will surface details.
+    }
 
     let output = ''
     let finished = false
@@ -295,8 +310,8 @@ async function runHiddenClaudeOnce(
       resolve('(timed out)')
     }, 600_000)
 
-    child.stdout.on('data', (d: Buffer | string) => { output += d.toString() })
-    child.stderr.on('data', (d: Buffer | string) => { output += d.toString() })
+    child.stdout?.on('data', (d: Buffer | string) => { output += d.toString() })
+    child.stderr?.on('data', (d: Buffer | string) => { output += d.toString() })
     child.on('error', (err: Error) => {
       if (finished) return
       finished = true

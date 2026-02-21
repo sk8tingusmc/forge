@@ -57,6 +57,15 @@ Not all CLIs should use `-p`.
 - Add double-click on a synthesis row to spawn/resume that synthesized session and optionally start looped continuation.
 - Normalize one-shot command handling per CLI instead of assuming `-p` everywhere.
 - Add a Forge app icon for the taskbar/window icon so the app no longer shows the default Electron logo.
+- Apply the `ENAMETOOLONG` prevention pattern to all CLIs in hidden/non-interactive runs:
+  - Avoid passing large synthesized prompts as command-line args.
+  - Pipe large prompt payloads via stdin instead.
+  - Keep per-CLI session-id flags/args small and model-specific.
+- Fix session terminal scrollbar behavior so the scrollbar is fully draggable (not only wheel/track scroll).
+- Fix window management behavior for desktop usability:
+  - Allow restoring from maximized back to normal/medium window size reliably.
+  - Allow manual window resize from edges/corners.
+  - Allow dragging the window across the screen and between monitors.
 
 ## Future: multi-model synthesis (after each CLI is fully working)
 
